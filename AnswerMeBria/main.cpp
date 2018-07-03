@@ -20,8 +20,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	}
 #endif // DEBUG
 
-	// setup the main parts of the window
-	switch (Window::InitWindow(TEXT("Wil's Window"), TEXT("Win32 Guided Tour Application"), hInstance)) {
+	// setup the main parts of the window and handle errors
+	switch (Window::InitWindow(TEXT("Answerme Bria!"), TEXT("Answerme Bria!"), hInstance)) {
 		case ERRORS::CREATE_WINDOW:
 			MessageBox(NULL, TEXT("CreateWindow Failed"), TEXT("ERROR"), NULL);
 			return ERRORS::CREATE_WINDOW;

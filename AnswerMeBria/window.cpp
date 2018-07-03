@@ -25,7 +25,7 @@ int Window::InitWindow(LPCSTR pWindowClass, LPCSTR pTitle, HINSTANCE instance)
 
 	// register the WNDCLASSEX
 	if (!RegisterClassEx(&wcex)) {
-		MessageBox(NULL, TEXT("Call to RegisterClassEx failed"), TEXT("Win32 guided tour"), NULL);
+		MessageBox(NULL, TEXT("Call to RegisterClassEx failed"), TEXT("Error"), NULL);
 		return ERRORS::REGISTER_CLASS_EX;
 	}
 
@@ -36,7 +36,7 @@ int Window::InitWindow(LPCSTR pWindowClass, LPCSTR pTitle, HINSTANCE instance)
 		WS_OVERLAPPEDWINDOW,	// the type of window to create
 		CW_USEDEFAULT,			// initial position x
 		CW_USEDEFAULT,			// initial position y
-		500,					// initial width
+		380,					// initial width
 		100,					// initial height
 		NULL,					// the parent of the window
 		NULL,					// does this application have a menu bar
@@ -44,7 +44,7 @@ int Window::InitWindow(LPCSTR pWindowClass, LPCSTR pTitle, HINSTANCE instance)
 		NULL					// a pointer to a CREATESTRUCT structure
 	);
 	if (!hwnd) {
-		MessageBox(NULL, TEXT("Call to CreateWindow failed"), TEXT("Win32 Guided Tour"), NULL);
+		MessageBox(NULL, TEXT("Call to CreateWindow failed"), TEXT("Error"), NULL);
 		return ERRORS::CREATE_WINDOW;
 	}
 
@@ -59,7 +59,9 @@ int Window::InitWindow(LPCSTR pWindowClass, LPCSTR pTitle, HINSTANCE instance)
 LRESULT CALLBACK Window::WndProc(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam) {
 	PAINTSTRUCT ps;
 	HDC hdc; // a datastructure used to communicate with the graphics subsystem
-	TCHAR greeting[] = TEXT("Hello, World");
+	TCHAR line1[] = TEXT("While this window is open and your screen is locked");
+	TCHAR line2[] = TEXT("If bria is ringing a key press on your lock screen will");
+	TCHAR line3[] = TEXT("answer the phone for you");
 
 	switch (uMsg) {
 	case WM_PAINT:
@@ -67,12 +69,14 @@ LRESULT CALLBACK Window::WndProc(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wPa
 		// here your application is layed out
 		// for this introcuction we just print out hellow world
 		// in our top left corner
-		TextOut(hdc, 5, 5, greeting, _tcslen(greeting));
+		TextOut(hdc, 5, 5, line1, _tcslen(line1));
+		TextOut(hdc, 5, 22, line2, _tcslen(line2));
+		TextOut(hdc, 5, 39, line3, _tcslen(line3));
 		// end application-specific layout section.
 		EndPaint(hwnd, &ps);
 		break;
 	case WM_WTSSESSION_CHANGE:
-		if (wParam == WTS_SESSIONSTATE_UNLOCK) {
+		if (wParam == WTS_SESSION_UNLOCK) {
 			Log::LogMessage("WTS_SESSION_UNLOCK");
 			sessionLocked = false;
 			break;
