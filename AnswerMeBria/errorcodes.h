@@ -1,0 +1,11 @@
+#pragma once
+
+
+// error codes
+enum ERRORS {
+	NOERR,
+	REGISTER_CLASS_EX,
+	KEYBOARD_LL_HOOK,
+	CREATE_WINDOW,
+	REGISTER_SESSION_NOTIFICATION
+};
