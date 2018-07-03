@@ -24,18 +24,26 @@ namespace Window {
 	extern LRESULT CALLBACK WndProc(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam);
 
 	// a callback used with SetWindowsHookEx function. the system calls this function 
-	// everytime a new kjeyboard input event is about to be posted into the thread input queue.
+	// everytime a new keyboard input event is about to be posted into the thread input queue.
 	// nCode - A code the hook procedure uses to determine how to process the message.
 	// wParam - The identifier of the keyboard message.This parameter can be one of the following messages : WM_KEYDOWN, WM_KEYUP, WM_SYSKEYDOWN, or WM_SYSKEYUP.
 	// lParam - A pointer to a KBDLLHOOKSTRUCT structure.
 	// https://msdn.microsoft.com/en-us/library/windows/desktop/ms644985%28v=vs.85%29.aspx?f=255&MSPPError=-2147217396
 	extern LRESULT CALLBACK LowLevelKeyboardProc(_In_ int nCode, _In_ WPARAM wParam, _In_ LPARAM lParam);
 
+	// display the window and update it
 	extern void Show(int CmdShow);
 
+	// returns true if we successfully registered the keyboard hook.
+	// if not, quit, something is quite wrong and there is no point 
+	// in this program without it.
 	extern bool RegisterKeyboardHook();
 
+	// Worker thread for contacting Bria phone.
+	// Establishing if there is a phone call
+	// if so, telling bria to answer it.
 	extern void Worker(LPARAM lParam);
 
+	// unregister hooks and any other cleanup if nessesary
 	extern void Cleanup();
 }

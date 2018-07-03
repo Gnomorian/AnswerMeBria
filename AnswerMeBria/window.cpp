@@ -66,9 +66,6 @@ LRESULT CALLBACK Window::WndProc(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wPa
 	switch (uMsg) {
 	case WM_PAINT:
 		hdc = BeginPaint(hwnd, &ps);
-		// here your application is layed out
-		// for this introcuction we just print out hellow world
-		// in our top left corner
 		TextOut(hdc, 5, 5, line1, _tcslen(line1));
 		TextOut(hdc, 5, 22, line2, _tcslen(line2));
 		TextOut(hdc, 5, 39, line3, _tcslen(line3));
@@ -76,13 +73,13 @@ LRESULT CALLBACK Window::WndProc(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wPa
 		EndPaint(hwnd, &ps);
 		break;
 	case WM_WTSSESSION_CHANGE:
-		if (wParam == WTS_SESSION_UNLOCK) {
-			Log::LogMessage("WTS_SESSION_UNLOCK");
+		if (wParam == WTS_SESSION_UNLOCK) { // the session was unlocked, let the hook know.
+			Log::LogMessage("WTS_SESSION_UNLOCK", Log::LOGLEVEL::DEBUGG);
 			sessionLocked = false;
 			break;
 		}
-		if (wParam == WTS_SESSION_LOCK) {
-			Log::LogMessage("WTS_SESSION_LOCK");
+		if (wParam == WTS_SESSION_LOCK) { // the session was locked, let the hook know.
+			Log::LogMessage("WTS_SESSION_LOCK", Log::LOGLEVEL::DEBUGG);
 			sessionLocked = true;
 			break;
 		}
@@ -98,31 +95,18 @@ LRESULT CALLBACK Window::WndProc(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wPa
 }
 
 LRESULT CALLBACK Window::LowLevelKeyboardProc(_In_ int nCode, _In_ WPARAM wParam, _In_ LPARAM lParam) {
-	// if nCode is less than 1, must pass back and do no more processing.
-	// if nCode == HC_ACTION wParam and lParam has information for you
-	static int num = 0;
-	static std::string msg;
+	// if nCode is less that 0, this message isnt for us, pass it on.
 	if (nCode < 0) {
 		return CallNextHookEx(NULL, nCode, wParam, lParam);
 	}
 
-	switch (wParam) {
-	case WM_KEYDOWN:
-	{
-		if (sessionLocked) {
-			std::thread thread(&Window::Worker, lParam);
-			thread.detach();
-		}
-		break;
+	// pass processing to a detached thread so we can pass 
+	// to the next hook as quickly as possible.
+	if (wParam == WM_KEYDOWN && sessionLocked) {
+		std::thread thread(&Window::Worker, lParam);
+		thread.detach();
 	}
-	case WM_KEYUP:
-		break;
-	case WM_SYSKEYDOWN:
-		break;
-	case WM_SYSKEYUP:
-		break;
 
-	}
 	return CallNextHookEx(NULL, nCode, wParam, lParam);
 }
 
@@ -132,7 +116,6 @@ void Window::Show(int CmdShow) {
 }
 
 bool Window::RegisterKeyboardHook() {
-	// register keyboard hook
 	hookproc = SetWindowsHookEx(WH_KEYBOARD_LL, &Window::LowLevelKeyboardProc, NULL, NULL);
 	if (hookproc == NULL) {
 		DWORD errormsg = GetLastError();
