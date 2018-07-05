@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common.h"
+#include <fstream>
 
 namespace Log {
 
@@ -11,11 +12,16 @@ namespace Log {
 	};
 
 	static bool console_created = false;
+	// virual file used for the console
 	static FILE* fileout = NULL;
+	static std::fstream log_file;
 
 	// alocates a console to this windows application
 	// used when debugging to see more verbose messages
 	bool CreateConsole();
+
+	// open log files and console where required
+	bool InitLogging();
 
 	// deallocates the console and closes files
 	void Cleanup();

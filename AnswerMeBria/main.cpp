@@ -9,29 +9,27 @@ int MessageLoop() {
 	return (int)msg.wParam;
 }
 
+void socketTest() {
+	Socket socket("http://www.w3.org:80");
+	//socket.Connect();
+	socket.SendRequest();
+	socket.Cleanup();
+}
+
 // entry point
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	LPSTR lpCmdLine, int nCmdShow)
 {
-#ifdef DEBUG
-	// initialize the console
-	if (!Log::CreateConsole()) {
-		MessageBox(NULL, TEXT("Could not create Console"), TEXT("Error"), NULL);
-	}
-#endif // DEBUG
+	Log::InitLogging();
+
+	socketTest();
 
 	// setup the main parts of the window and handle errors
-	switch (Window::InitWindow(TEXT("Answerme Bria!"), TEXT("Answerme Bria!"), hInstance)) {
-		case ERRORS::CREATE_WINDOW:
-			MessageBox(NULL, TEXT("CreateWindow Failed"), TEXT("ERROR"), NULL);
-			return ERRORS::CREATE_WINDOW;
-		case ERRORS::REGISTER_CLASS_EX:
-			MessageBox(NULL, TEXT("Failed to Register Window Class"), TEXT("ERROR"), NULL);
-			return ERRORS::REGISTER_CLASS_EX;
-		case ERRORS::REGISTER_SESSION_NOTIFICATION:
-			MessageBox(NULL, TEXT("Failed to reigster Session Notification"), TEXT("ERROR"), NULL);
-			return ERRORS::REGISTER_SESSION_NOTIFICATION;
+	int result = Window::InitWindow(TEXT("Answerme Bria!"), TEXT("Answerme Bria!"), hInstance);
+	if (result != ERRORS::NOERR) {
+		return result;
 	}
+
 	Window::Show(nCmdShow);
 
 	if (!Window::RegisterKeyboardHook())

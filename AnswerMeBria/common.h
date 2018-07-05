@@ -9,8 +9,11 @@
 #include <wchar.h>
 #include <tchar.h>
 #include <WtsApi32.h>
+#include <websocket.h>
+
 
 // my stuff
 #include "errorcodes.h"
 #include "window.h"
 #include "Logger.h"
+#include "Socket.h"

@@ -1,5 +1,4 @@
 #include "Logger.h"
-
 #define _CRT_SECURE_NO_WARNINGS
 #include <ctime>
 
@@ -10,6 +9,18 @@ bool Log::CreateConsole() {
 		console_created = true;
 		return console_created;
 	}
+	return true;
+}
+
+bool Log::InitLogging() {
+#ifdef DEBUG
+	// initialize the console
+	if (!Log::CreateConsole()) {
+		MessageBox(NULL, TEXT("Could not create Console"), TEXT("Error"), NULL);
+	}
+#endif // DEBUG
+	log_file.open("ambria.log", std::ios::ate);
+	LogMessage("Launched Ambria...");
 	return true;
 }
 
