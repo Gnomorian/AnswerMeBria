@@ -1,24 +1,37 @@
 #include "Common.h"
 
+#define _SCL_SECURE_NO_WARNINGS
+
+bool operator==(WEB_SOCKET_HTTP_HEADER a, WEB_SOCKET_HTTP_HEADER b) {
+	if (a.ulNameLength != b.ulNameLength)
+		return false;
+
+	for (int i = 0; i < a.ulNameLength; i++) {
+		if (a.pcName[i] != b.pcName[i])
+			return false;
+	}
+	return true;
+}
 
 Socket::Socket(const std::string& serveraddress) {
-
 	// create the header structure
-	// 1 header of "Host:url" is needed at a minimum
-	WEB_SOCKET_HTTP_HEADER* host = new WEB_SOCKET_HTTP_HEADER;
-	PCHAR phost = (char*)"Host";
-	PCHAR pValue = (char*)"http://www.w3.org:80";
-	host->pcName = phost;
-	host->ulNameLength = sizeof(phost);
-	host->pcValue = pValue;
-	host->ulValueLength = sizeof(pValue);
+	WEB_SOCKET_HTTP_HEADER* host = CreateHeader("Host", serveraddress);
 	headers.push_back(*host);
+	// lets try add the other headers shown in https://en.wikipedia.org/wiki/WebSocket
+	WEB_SOCKET_HTTP_HEADER* upgrade = CreateHeader("Upgrade", "websocket");
+	WEB_SOCKET_HTTP_HEADER* websec_key = CreateHeader("Sec-WebSocket-Key", "54dz8f4sdf5784sf51x)");
+	WEB_SOCKET_HTTP_HEADER* websec_version = CreateHeader("Sec-WebSocket-Version", "13");
+	WEB_SOCKET_HTTP_HEADER* origin = CreateHeader("Origin", "wss://echo.websocket.org");
+	WEB_SOCKET_HTTP_HEADER* websec_protocol = CreateHeader("Sec-WebSocket-Protocol", "chat");
+	headers.push_back(*upgrade);
+	headers.push_back(*websec_key);
+	headers.push_back(*websec_version);
+	headers.push_back(*origin);
 }
 
 Socket::~Socket() {}
 
 bool Socket::Connect() {
-
 	if (WebSocketCreateClientHandle(NULL, 0, &socket_handle) != S_OK) {
 		Log::LogMessage("WebSocketCreateClientHandle Failed", Log::LOGLEVEL::CRITICAL);
 		return 1;
@@ -27,19 +40,26 @@ bool Socket::Connect() {
 	// if handshake is successful, these will be populated
 	WEB_SOCKET_HTTP_HEADER* responceHeaders = nullptr;
 	ULONG responceHeadderCount;
-	if (WebSocketBeginClientHandshake(socket_handle, NULL, 0, NULL, 0, &headers[0], 1, &responceHeaders, &responceHeadderCount) != S_OK) {
+	if (WebSocketBeginClientHandshake(socket_handle, NULL, 0, NULL, 0, &headers[0],  headers.size(), &responceHeaders, &responceHeadderCount) != S_OK) {
 		return -1;
 	}
-	// name nameLength, value valuelength
-	for (int i = 0; i < responceHeadderCount; i++) {
-		std::cout << responceHeaders[i].pcName << "x" << responceHeaders[i].ulNameLength << ":" << responceHeaders[i].pcValue << "x" << responceHeaders[i].ulValueLength << std::endl;
-	}
-	
 
+	AddHeaders_NoDuplicates(responceHeaders, responceHeadderCount);
+
+	if (WebSocketCreateClientHandle(NULL, 0, &socket_handle) != S_OK) {
+		Log::LogMessage("WebSocketCreateClientHandle Failed", Log::LOGLEVEL::CRITICAL);
+		return 1;
+	}
+
+/*	// writes the headers in headers[] after AddHeaders_NoDuplicates
+	for (int i = 0; i < headers.size(); i++) {
+		printf("%.*s:%.*s\n", headers[i].ulNameLength, headers[i].pcName, headers[i].ulValueLength, headers[i].pcValue);
+	}/**/
+	
 	ULONG selected_subprotocol;
 	ULONG selected_extensions;
 	ULONG selected_extensions_count;
-	HRESULT result = WebSocketEndClientHandshake(socket_handle, responceHeaders, responceHeadderCount, &selected_extensions, &selected_extensions_count, &selected_subprotocol);
+	HRESULT result = WebSocketEndClientHandshake(socket_handle, &headers[0], headers.size(), &selected_extensions, &selected_extensions_count, &selected_subprotocol);
 	switch (result) {
 	case S_OK:
 		return true;
@@ -54,7 +74,9 @@ bool Socket::Connect() {
 		Log::LogMessage("Protocol data had an invalid format.");
 		break;/**/
 	default:
-		Log::LogMessage("WebSocketEndClientHandshake returned unsupported return code: "+result, Log::LOGLEVEL::CRITICAL);
+		std::string msg = "WebSocketEndClientHandshake returned unsupported return code: ";
+		msg += result;
+		Log::LogMessage(msg, Log::LOGLEVEL::CRITICAL);
 	}
 }
 
@@ -105,9 +127,45 @@ void Socket::SendRequest() {
 			std::cout << GetLastError() << std::endl;
 			return;
 		}
-
-
-	//WinHttpOpenRequest();
-
-	//WinHttpSendRequest()
 }
+
+
+WEB_SOCKET_HTTP_HEADER* Socket::CreateHeader(const std::string &pName, const std::string &pValue) {
+	WEB_SOCKET_HTTP_HEADER* header = new WEB_SOCKET_HTTP_HEADER;
+
+	PCHAR name = new CHAR[pName.length()];
+	pName.copy(name, pName.length());
+	header->ulNameLength = pName.length();
+	header->pcName = name;
+
+	PCHAR value = new CHAR[pValue.length()];
+	pValue.copy(value, pValue.length());
+	header->pcValue = value;
+	header->ulValueLength = pValue.length();
+
+	return header;
+}
+
+void Socket::AddHeaders_NoDuplicates(WEB_SOCKET_HTTP_HEADER* duplicate_headers, ULONG count) {
+	std::vector<WEB_SOCKET_HTTP_HEADER> temp;
+
+	// replace headers in the vector with copies from the duplicates.
+	for (int i = 0; i < headers.size(); i++) {
+		for (int j = 0; j < count; j++) {
+			if (headers[i] == duplicate_headers[j]) {
+				headers[i] = duplicate_headers[j];
+			}
+		}
+	}
+	// add headers that are in duplicates and not in the original, to the original.
+	for (int j = 0; j < count; j++) {
+		for (int i = 0; i < headers.size(); i++) {
+			if (headers[i] == duplicate_headers[j]) {
+				goto skip_loop;
+			}
+		}
+		headers.push_back(duplicate_headers[j]);
+		skip_loop:;
+	}
+}
+

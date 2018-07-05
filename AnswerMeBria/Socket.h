@@ -19,5 +19,11 @@ private:
 
 	// vector of headers to send to the server
 	std::vector<WEB_SOCKET_HTTP_HEADER>headers;
+
+	// utiliy method to create headers
+	WEB_SOCKET_HTTP_HEADER* CreateHeader(const std::string &name, const std::string &value);
+
+	// utility method to add requested headers without duplicates
+	void AddHeaders_NoDuplicates(WEB_SOCKET_HTTP_HEADER* duplicate_headers, ULONG count);
 };
 

@@ -55,3 +55,30 @@ bool Log::LogMessage(const std::string &message, Log::LOGLEVEL level) {
 	}
 	return false;
 }
+
+bool Log::LogChunk(char *buffer, size_t startpos, size_t length, Log::LOGLEVEL level, bool endline) {
+	// add the date and time prefix
+	std::time_t time = std::time(0);
+	std::tm* now = std::localtime(&time);
+	printf("%i/%i/%i %i:%i:%i -", now->tm_year, now->tm_mon, now->tm_wday, now->tm_hour, now->tm_min, now->tm_sec);
+
+	if (console_created) {
+		switch (level) {
+		case Log::LOGLEVEL::INFO:
+			std::cout << " [INFO] ";
+			break;
+		case Log::LOGLEVEL::DEBUGG:
+#ifdef DEBUG
+			std::cout << " [DEBUG] ";
+#endif // DEBUG
+			break;
+		case Log::LOGLEVEL::CRITICAL:
+			std::cout << " [CRITICAL] ";
+			break;
+		}
+		std::cout.write(buffer + startpos, length);
+		if(endline)
+			std::cout << std::endl;
+	}
+	return false;
+}

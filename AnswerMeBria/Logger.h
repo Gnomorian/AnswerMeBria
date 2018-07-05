@@ -28,4 +28,7 @@ namespace Log {
 
 	// writes to the console and logfile, returns true if successful
 	bool LogMessage(const std::string &message, Log::LOGLEVEL level = Log::LOGLEVEL::INFO);
+
+	// write non null terminated messages to the console and logfile, returns true of successful
+	bool LogChunk(char *buffer, size_t startpos, size_t length, Log::LOGLEVEL level, bool endline = true);
 }

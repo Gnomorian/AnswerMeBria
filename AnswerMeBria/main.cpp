@@ -10,9 +10,9 @@ int MessageLoop() {
 }
 
 void socketTest() {
-	Socket socket("http://www.w3.org:80");
-	//socket.Connect();
-	socket.SendRequest();
+	Socket socket("demos.kaazing.com/echo:443");
+	socket.Connect();		// websocket.h doesnt work at the moment, stuck on WebSocketEndClientHandshake
+	//socket.SendRequest(); // WinHttp.h alternative also doesnt
 	socket.Cleanup();
 }
 
