@@ -31,5 +31,6 @@ private:
 	WINHTTP_WEB_SOCKET_BUFFER_TYPE eBufferType;
 
 	void ClearBuffer();
+	void RecieveLoop(bool running);
 };
 

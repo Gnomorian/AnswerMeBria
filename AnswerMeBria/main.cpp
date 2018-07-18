@@ -1,34 +1,32 @@
 #include "common.h"
 
 // temp function to tag on websockets to the existing project
+
+WebSocket* ws = NULL;
+
 void testWebsocket() {
-	WebSocket* ws = new WebSocket(L"demos.kaazing.com", 80, L"/echo");
+	ws = new WebSocket(L"demos.kaazing.com", 80, L"/echo");
 
 	ws->InitializeWebSocket();
 	ws->SendMessage(L"This is a message", 17);
-	ws->RecieveMessage();
 	ws->SendMessage(L"This is another message", 23);
-	ws->RecieveMessage();
-	char end;
-	std::cin >> end;
-
-	// epilog
-	ws->EndConnection();
-	delete ws;
 }
 
 int MessageLoop() {
 	MSG msg;
 	while (GetMessage(&msg, NULL, 0, 0)) {
+		// window events
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
+
+		// websocket recieve
+		ws->RecieveMessage();
 	}
 	return (int)msg.wParam;
 }
 
 // entry point
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
-	LPSTR lpCmdLine, int nCmdShow)
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
 	Log::InitLogging();
 
@@ -49,7 +47,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	int rtrn = MessageLoop();
 
 	Window::Cleanup();
+	ws->EndConnection();
+	delete ws;
 	Log::Cleanup();
+
 
 	return rtrn;
 }

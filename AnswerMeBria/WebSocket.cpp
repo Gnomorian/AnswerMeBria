@@ -1,7 +1,5 @@
 #include "WebSocket.h"
 
-
-
 WebSocket::WebSocket(LPCWSTR server, INTERNET_PORT port, LPCWSTR path) {
 	_serverName = server;
 	_port = port;
@@ -154,7 +152,6 @@ int WebSocket::SendMessage(const WCHAR* message, int size) {
 	
 }
 
-
 int WebSocket::RecieveMessage() {	
 	do
 	{
@@ -169,7 +166,6 @@ int WebSocket::RecieveMessage() {
 		{
 			return -1;
 		}
-
 		//
 		// If we receive just part of the message restart the receive operation.
 		//
@@ -191,6 +187,12 @@ int WebSocket::RecieveMessage() {
 
 	wprintf(L"Received message from the server: '%.*s'\n", _dwBufferLength, (WCHAR*)_rgbBuffer);
 	ClearBuffer();
+}
+
+// the recieve loop sits on its own thread, seem that WinHttpWebSocketReceive 
+// doesn't have a timeout, so it cant sit in main's MessageLoop like i intended.
+void WebSocket::RecieveLoop(bool running) {
+
 }
 
 void WebSocket::ClearBuffer() {
