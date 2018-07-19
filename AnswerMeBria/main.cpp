@@ -2,14 +2,21 @@
 
 // temp function to tag on websockets to the existing project
 
-WebSocket* ws = NULL;
+Pipe* p = NULL;
 
-void testWebsocket() {
-	ws = new WebSocket(L"demos.kaazing.com", 80, L"/echo");
-
-	ws->InitializeWebSocket();
-	ws->SendMessage(L"This is a message", 17);
-	ws->SendMessage(L"This is another message", 23);
+void testPipes() {
+	std::string callerId;
+	p = new Pipe((TCHAR*)TEXT("\\\\.\\pipe\\apipipe"));
+	p->InitializePipe();
+	//p->PipeMessage(p->ConstructMessage("bringToFront", ""));
+	// get call status
+	p->PipeMessage(p->ConstructMessage("status", "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<status><type>call</type></status>"));
+	std::string message;
+	do {// keep checking the pipe until you get the proper responce
+		message = p->RecieveMessage();
+	} while (message.find("<status type=\"call\">") == std::string::npos);
+	// answer call
+	std::cout << message << std::endl;
 }
 
 int MessageLoop() {
@@ -18,9 +25,6 @@ int MessageLoop() {
 		// window events
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
-
-		// websocket recieve
-		ws->RecieveMessage();
 	}
 	return (int)msg.wParam;
 }
@@ -36,7 +40,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		return result;
 	}
 
-	testWebsocket();
+	testPipes();
 
 	Window::Show(nCmdShow);
 
@@ -47,10 +51,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	int rtrn = MessageLoop();
 
 	Window::Cleanup();
-	ws->EndConnection();
-	delete ws;
+	delete p;
 	Log::Cleanup();
-
 
 	return rtrn;
 }

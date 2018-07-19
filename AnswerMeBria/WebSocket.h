@@ -11,6 +11,7 @@ public:
 	int EndConnection();
 	int SendMessage(const WCHAR* message, int size);
 	int RecieveMessage();
+	void WriteError();
 private:
 	HINTERNET _sessionHandle;
 	HINTERNET _connectionHandle;

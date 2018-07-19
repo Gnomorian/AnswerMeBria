@@ -39,7 +39,7 @@ int WebSocket::InitializeWebSocket() {
 	//
 	// Create session, connection and request handles.
 	//
-
+	Log::LogMessage("Creating Session Handle");
 	_sessionHandle = WinHttpOpen(L"AnswerMeBria", WINHTTP_ACCESS_TYPE_DEFAULT_PROXY, NULL, NULL, 0);
 	if (_sessionHandle == NULL)
 	{
@@ -47,6 +47,7 @@ int WebSocket::InitializeWebSocket() {
 		return -1;
 	}
 
+	Log::LogMessage("Creating Connection Handle");
 	_connectionHandle = WinHttpConnect(_sessionHandle, _serverName, _port, 0);
 	if (_connectionHandle == NULL)
 	{
@@ -54,6 +55,7 @@ int WebSocket::InitializeWebSocket() {
 		return -1;
 	}
 
+	Log::LogMessage("Creating Request Handle");
 	_requestHandle = WinHttpOpenRequest(_connectionHandle, L"GET", _path, NULL, NULL, NULL,	0);
 	if (_requestHandle == NULL)
 	{
@@ -64,6 +66,7 @@ int WebSocket::InitializeWebSocket() {
 	//
 	// Request protocol upgrade from http to websocket.
 	//
+	Log::LogMessage("Creating Upgrade Header");
 #pragma prefast(suppress:6387, "WINHTTP_OPTION_UPGRADE_TO_WEB_SOCKET does not take any arguments.")
 	status = WinHttpSetOption(_requestHandle, WINHTTP_OPTION_UPGRADE_TO_WEB_SOCKET, NULL, 0);
 	if (!status)
@@ -77,6 +80,7 @@ int WebSocket::InitializeWebSocket() {
 	// Application may specify additional headers if needed.
 	//
 
+	Log::LogMessage("Upgrading to Websocket");
 	status = WinHttpSendRequest(_requestHandle,	WINHTTP_NO_ADDITIONAL_HEADERS, 0, NULL, 0, 0, 0);
 	if (!status)
 	{
@@ -84,6 +88,7 @@ int WebSocket::InitializeWebSocket() {
 		return -1;
 	}
 
+	Log::LogMessage("Waiting for Upgrade Responce");
 	status = WinHttpReceiveResponse(_requestHandle, 0);
 	if (!status)
 	{
@@ -95,7 +100,7 @@ int WebSocket::InitializeWebSocket() {
 	// Application should check what is the HTTP status code returned by the server and behave accordingly.
 	// WinHttpWebSocketCompleteUpgrade will fail if the HTTP status code is different than 101.
 	//
-
+	Log::LogMessage("Websocket Upgrade Completed");
 	_websocketHandle = WinHttpWebSocketCompleteUpgrade(_requestHandle, NULL);
 	if (_websocketHandle == NULL)
 	{
@@ -198,4 +203,8 @@ void WebSocket::RecieveLoop(bool running) {
 void WebSocket::ClearBuffer() {
 	_pbCurrentBufferPointer = _rgbBuffer;
 	_dwBufferLength = ARRAYSIZE(_rgbBuffer);
+}
+
+void WebSocket::WriteError() {
+	std::cout << _errmsg << std::endl;
 }

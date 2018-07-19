@@ -16,3 +16,4 @@
 #include "window.h"
 #include "Logger.h"
 #include "WebSocket.h"
+#include "Pipe.h"

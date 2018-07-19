@@ -13,14 +13,13 @@ bool Log::CreateConsole() {
 }
 
 bool Log::InitLogging() {
-#ifdef DEBUG
+//#ifdef DEBUG
 	// initialize the console
 	if (!Log::CreateConsole()) {
 		MessageBox(NULL, TEXT("Could not create Console"), TEXT("Error"), NULL);
 	}
-#endif // DEBUG
+//endif // DEBUG
 	log_file.open("ambria.log", std::ios::ate);
-	LogMessage("Launched Ambria...");
 	return true;
 }
 
