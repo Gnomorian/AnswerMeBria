@@ -1,17 +1,21 @@
 #include "window.h"
 
 #include <thread>
+#include "resource.h"
 
-int Window::InitWindow(LPCSTR pWindowClass, LPCSTR pTitle, HINSTANCE instance)
+int Window::InitWindow(LPCSTR pWindowClass, LPCSTR pTitle, HINSTANCE instance, int nCmdShow)
 {
 	windowClass = pWindowClass;
 	title = pTitle;
+	cmdShow = nCmdShow;
+
+	WM_TASKBAR = RegisterWindowMessageA("Taskbar Created");
 
 	// this defines information about my window such as its colour, name and most importantly for this application
 	// the pointer to the windows process callback function so i can process windows messages.
 	// https://msdn.microsoft.com/library/windows/desktop/ms633577
 	wcex.cbSize = sizeof(WNDCLASSEX);
-	wcex.style = CS_HREDRAW | CS_VREDRAW;
+	wcex.style = CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS;
 	wcex.lpfnWndProc = WndProc; // pointer to my msg callback function
 	wcex.cbClsExtra = 0;
 	wcex.cbWndExtra = 0;
@@ -53,7 +57,22 @@ int Window::InitWindow(LPCSTR pWindowClass, LPCSTR pTitle, HINSTANCE instance)
 		MessageBox(NULL, TEXT("Could not Subscribe to SessionNotifications"), TEXT("Error"), NULL);
 		return ERRORS::REGISTER_SESSION_NOTIFICATION;
 	}
+
+	InitIconData();
+
 	return ERRORS::NOERR;
+}
+
+void Window::InitIconData() {
+	memset(&nic, 0, sizeof(NOTIFYICONDATA));
+
+	nic.cbSize = sizeof(NOTIFYICONDATA);
+	nic.hWnd = hwnd;
+	nic.uID = ID_TRAY_APP_ICON;
+	nic.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
+	nic.uCallbackMessage = WM_SYSICON; // setup our invented windows message
+	nic.hIcon = (HICON)LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(ICO1));
+	strncpy(nic.szTip, title, sizeof(title));
 }
 
 LRESULT CALLBACK Window::WndProc(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam) {
@@ -64,6 +83,12 @@ LRESULT CALLBACK Window::WndProc(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wPa
 	TCHAR line3[] = TEXT("answer the phone for you");
 
 	switch (uMsg) {
+	case WM_ACTIVATE:
+		Shell_NotifyIcon(NIM_ADD, &nic);
+		break;
+	case WM_CREATE:
+		Hmenu = CreatePopupMenu();
+		AppendMenu(Hmenu, MF_STRING, ID_TRAY_EXIT, TEXT("Exit"));
 	case WM_PAINT:
 		hdc = BeginPaint(hwnd, &ps);
 		TextOut(hdc, 5, 5, line1, _tcslen(line1));
@@ -72,17 +97,62 @@ LRESULT CALLBACK Window::WndProc(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wPa
 		// end application-specific layout section.
 		EndPaint(hwnd, &ps);
 		break;
-	case WM_WTSSESSION_CHANGE:
-		if (wParam == WTS_SESSION_UNLOCK) { // the session was unlocked, let the hook know.
+	case WM_WTSSESSION_CHANGE: // did the screen get locked?
+		if (wParam == WTS_SESSION_UNLOCK) {
 			Log::LogMessage("WTS_SESSION_UNLOCK", Log::LOGLEVEL::DEBUGG);
 			sessionLocked = false;
 			break;
 		}
-		if (wParam == WTS_SESSION_LOCK) { // the session was locked, let the hook know.
+		if (wParam == WTS_SESSION_LOCK) {
 			Log::LogMessage("WTS_SESSION_LOCK", Log::LOGLEVEL::DEBUGG);
 			sessionLocked = true;
 			break;
 		}
+		break;
+	case WM_SYSICON:
+		switch (wParam) {
+		case ID_TRAY_APP_ICON:
+			SetForegroundWindow(hwnd);
+			break;
+		}
+		if (lParam == WM_LBUTTONUP) {
+			Window::Restore();
+		}
+		else if (lParam == WM_RBUTTONDOWN) {
+			// get current mouse position
+			POINT curPoint;
+			GetCursorPos(&curPoint);
+			SetForegroundWindow(hwnd);
+			// TrackPopupMenu blocks the app until TrackPopupMenu returns
+			UINT clicked = TrackPopupMenu(Hmenu, TPM_RETURNCMD | TPM_NONOTIFY, curPoint.x, curPoint.y, 0, hwnd, NULL);
+			SendMessage(hwnd, WM_NULL, 0, 0); // send benign message to window to make sure the menu goes away.
+			if (clicked == ID_TRAY_EXIT) {
+				// quit the application
+				Shell_NotifyIcon(NIM_DELETE, &nic);
+				PostQuitMessage(0);
+			}
+		}
+		break;
+	case WM_SYSCOMMAND:
+		switch (wParam & 0xFFF0) {
+		case SC_MINIMIZE:
+		case SC_CLOSE:
+			Window::Hide();
+			return 0;
+			break;
+		}
+		break;
+	case WM_NCHITTEST:
+	{
+		UINT hittest = DefWindowProc(hwnd, WM_NCHITTEST, wParam, lParam);
+		if (hittest == HTCLIENT)
+			return HTCAPTION;
+		else
+			return hittest;
+	}
+	case WM_CLOSE:
+		Window::Hide();
+		return 0;
 		break;
 	case WM_DESTROY:
 		PostQuitMessage(0);
@@ -100,19 +170,25 @@ LRESULT CALLBACK Window::LowLevelKeyboardProc(_In_ int nCode, _In_ WPARAM wParam
 		return CallNextHookEx(NULL, nCode, wParam, lParam);
 	}
 
-	// pass processing to a detached thread so we can pass 
-	// to the next hook as quickly as possible.
 	if (wParam == WM_KEYDOWN && sessionLocked) {
 		std::thread thread(&Window::Worker, lParam);
 		thread.detach();
 	}
-
 	return CallNextHookEx(NULL, nCode, wParam, lParam);
 }
 
-void Window::Show(int CmdShow) {
-	ShowWindow(hwnd, CmdShow);
+void Window::Show() {
+	ShowWindow(hwnd, cmdShow);
 	UpdateWindow(hwnd);
+	Window::Hide();
+}
+
+void Window::Restore() {
+	ShowWindow(hwnd, SW_SHOW);
+}
+
+void Window::Hide() {
+	ShowWindow(hwnd, SW_HIDE);
 }
 
 bool Window::RegisterKeyboardHook() {
@@ -130,8 +206,50 @@ void Window::Worker(LPARAM lParam) {
 	KBDLLHOOKSTRUCT* keyStruct = (KBDLLHOOKSTRUCT*)lParam;
 	message += keyStruct->vkCode;
 	Log::LogMessage(message);
+	AnswerCall();
 }
 
 void Window::Cleanup() {
 	UnhookWindowsHookEx(hookproc);
+}
+
+void Window::AnswerCall() {
+	// if one of these threads are already answering the call, quit
+	if (answering)
+		return;
+	answering = true;
+	// initialize pipe and api
+	std::string callerId;
+	Pipe *p = new Pipe((TCHAR*)TEXT("\\\\.\\pipe\\apipipe"));
+	p->InitializePipe();
+	BriaAPI *api = new BriaAPI();
+
+	// get the current call status
+	std::string message;
+	int responce = api->GetCallStatus(message, *p);
+	std::cout << message << std::endl;
+
+	// get the caller id if there is one
+	// answer the call if there is a caller id
+	if (api->HasRingingCall(message)) {
+		Log::LogMessage("There is a ringing call!");
+		std::string callerId;
+		api->GetCallerId(message, callerId);
+		Log::LogMessage("Callerid is " + callerId);
+		api->AnswerCall(*p, callerId, message);
+		Log::LogMessage(message);
+	}
+	else {
+		Log::LogMessage("No Active Call");
+	}
+	delete p;
+	delete api;
+	answering = false;
+}
+
+void Window::AudioEndpointCallback() {
+	if (sessionLocked) {
+		std::cout << "Session Locked and Audio Changed, Answeing Call" << std::endl;
+		Window::AnswerCall();
+	}
 }

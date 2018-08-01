@@ -7,14 +7,26 @@ namespace Window {
 	static LPCSTR title;
 	// the window properties
 	static WNDCLASSEX wcex;
+	// handle? to the window messages
+	static UINT WM_TASKBAR;
 	// handle to the window
 	static HWND hwnd;
+	// the tray menu
+	static HMENU Hmenu;
+	// notifyicondata, data for the tray icon
+	static NOTIFYICONDATA nic;
 	// hook to get low level keyboard events
 	static HHOOK hookproc = NULL;
 	// tells the hook when to look for keyboard events
 	static bool sessionLocked = false;
+	// for updating the window
+	static int cmdShow = NULL;
+	// lock to prevent messaging bria too much if people spam the answer call button
+	static bool answering = false;
 
-	extern int InitWindow(LPCSTR windowClass, LPCSTR title, HINSTANCE instance);
+	extern int InitWindow(LPCSTR windowClass, LPCSTR title, HINSTANCE instance, int nCmdShow);
+
+	extern void InitIconData();
 
 	// hwnd - handle of the window
 	// uMsg - message your window has recieved.
@@ -31,8 +43,13 @@ namespace Window {
 	// https://msdn.microsoft.com/en-us/library/windows/desktop/ms644985%28v=vs.85%29.aspx?f=255&MSPPError=-2147217396
 	extern LRESULT CALLBACK LowLevelKeyboardProc(_In_ int nCode, _In_ WPARAM wParam, _In_ LPARAM lParam);
 
+	// this method exists for audioendpoint to call to tell the window that the volume changed, so it wants to answer the call
+	extern void AudioEndpointCallback();
+
 	// display the window and update it
-	extern void Show(int CmdShow);
+	extern void Show();
+	extern void Restore();
+	extern void Hide();
 
 	// returns true if we successfully registered the keyboard hook.
 	// if not, quit, something is quite wrong and there is no point 
@@ -46,4 +63,7 @@ namespace Window {
 
 	// unregister hooks and any other cleanup if nessesary
 	extern void Cleanup();
+
+	// opens a pipe and finds if there is a ringing call, if there is, answer it.
+	extern void AnswerCall();
 }

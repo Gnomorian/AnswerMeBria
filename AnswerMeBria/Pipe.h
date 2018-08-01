@@ -1,16 +1,22 @@
 #pragma once
 
-#include "common.h"
+//#include "common.h"
+
+#include <tchar.h>
+#include <string>
+#include <Windows.h>/**/
 
 class Pipe
 {
 public:
 	Pipe(TCHAR* pipeName);
+	Pipe();
 	~Pipe();
 	int PipeMessage(std::string content);
 	std::string RecieveMessage();
 	int InitializePipe();
-	std::string ConstructMessage(std::string type, std::string content);
+	int InitializePipe(TCHAR* pipeName);
+	static std::string ConstructMessage(std::string type, std::string content);
 
 private:
 	HANDLE hPipe;

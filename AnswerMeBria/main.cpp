@@ -1,30 +1,22 @@
 #include "common.h"
 
-// temp function to tag on websockets to the existing project
+#include <endpointvolume.h>
+#include <mmdeviceapi.h>
+#include <Functiondiscoverykeys_devpkey.h>
 
-Pipe* p = NULL;
+#include "AudioEndpointVolumeCallback.h"
+#include "AudioDeviceManager.h"
 
-void testPipes() {
-	std::string callerId;
-	p = new Pipe((TCHAR*)TEXT("\\\\.\\pipe\\apipipe"));
-	p->InitializePipe();
-	//p->PipeMessage(p->ConstructMessage("bringToFront", ""));
-	// get call status
-	p->PipeMessage(p->ConstructMessage("status", "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<status><type>call</type></status>"));
-	std::string message;
-	do {// keep checking the pipe until you get the proper responce
-		message = p->RecieveMessage();
-	} while (message.find("<status type=\"call\">") == std::string::npos);
-	// answer call
-	std::cout << message << std::endl;
-}
+#include "Tray.h"
 
+// the msg loop for the window
 int MessageLoop() {
 	MSG msg;
 	while (GetMessage(&msg, NULL, 0, 0)) {
 		// window events
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
+		//Tray::Update();
 	}
 	return (int)msg.wParam;
 }
@@ -35,23 +27,26 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	Log::InitLogging();
 
 	// setup the main parts of the window and handle errors
-	int result = Window::InitWindow(TEXT("Answerme Bria!"), TEXT("Answerme Bria!"), hInstance);
+	int result = Window::InitWindow(TEXT("Answerme Bria!"), TEXT("Answerme Bria!"), hInstance, nCmdShow);
 	if (result != ERRORS::NOERR) {
 		return result;
 	}
 
-	testPipes();
+	Window::Show();
 
-	Window::Show(nCmdShow);
+	//if (!Window::RegisterKeyboardHook())
+	//	return ERRORS::KEYBOARD_LL_HOOK;
 
-	if (!Window::RegisterKeyboardHook())
-		return ERRORS::KEYBOARD_LL_HOOK;
+	///////////////////////////////////////
+	
+	AudioEndpointVolumeCallback endpoint(&Window::AudioEndpointCallback);
+	AudioDeviceManager manager;
+	manager.InitializeCallback(&endpoint);
 
 	// main loop - wait until window is closed
 	int rtrn = MessageLoop();
 
 	Window::Cleanup();
-	delete p;
 	Log::Cleanup();
 
 	return rtrn;

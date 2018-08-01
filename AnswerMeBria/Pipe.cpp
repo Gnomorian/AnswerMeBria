@@ -1,18 +1,17 @@
 #include "Pipe.h"
 
-
+Pipe::Pipe() {}
 
 Pipe::Pipe(TCHAR* pipeName) : fSuccess(false)
 {
 	lpszPipename = pipeName;
 }
 
-
 Pipe::~Pipe()
 {
 	CloseHandle(hPipe);
-}
 
+}
 
 int Pipe::PipeMessage(std::string message) {
 	// Send a message to the pipe server. 
@@ -22,7 +21,7 @@ int Pipe::PipeMessage(std::string message) {
 
 	fSuccess = WriteFile(
 		hPipe,                  // pipe handle 
-		message.c_str(),             // message 
+		message.c_str(),        // message 
 		cbToWrite,              // message length 
 		&cbWritten,             // bytes written 
 		NULL);                  // not overlapped 
@@ -58,7 +57,7 @@ std::string Pipe::RecieveMessage() {
 		if (!fSuccess && GetLastError() != ERROR_MORE_DATA)
 			break;
 
-		_tprintf(TEXT("\"%s\"\n"), chBuf);
+		//_tprintf(TEXT("\"%s\"\n"), chBuf);
 	} while (!fSuccess);  // repeat loop if ERROR_MORE_DATA 
 
 	if (!fSuccess)
@@ -69,6 +68,12 @@ std::string Pipe::RecieveMessage() {
 	else {
 		return message;
 	}
+}
+
+int Pipe::InitializePipe(TCHAR* pipeName) {
+	lpszPipename = pipeName;
+	InitializePipe();
+	return 0;
 }
 
 int Pipe::InitializePipe() {

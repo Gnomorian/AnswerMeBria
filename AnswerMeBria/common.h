@@ -17,3 +17,4 @@
 #include "Logger.h"
 #include "WebSocket.h"
 #include "Pipe.h"
+#include "BriaAPI.h"
