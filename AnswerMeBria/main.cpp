@@ -7,8 +7,6 @@
 #include "AudioEndpointVolumeCallback.h"
 #include "AudioDeviceManager.h"
 
-#include "Tray.h"
-
 // the msg loop for the window
 int MessageLoop() {
 	MSG msg;
@@ -16,7 +14,6 @@ int MessageLoop() {
 		// window events
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
-		//Tray::Update();
 	}
 	return (int)msg.wParam;
 }

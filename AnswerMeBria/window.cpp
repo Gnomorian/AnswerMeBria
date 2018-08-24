@@ -3,11 +3,14 @@
 #include <thread>
 #include "resource.h"
 
+
 int Window::InitWindow(LPCSTR pWindowClass, LPCSTR pTitle, HINSTANCE instance, int nCmdShow)
 {
 	windowClass = pWindowClass;
 	title = pTitle;
 	cmdShow = nCmdShow;
+
+	registry = new Registry();
 
 	WM_TASKBAR = RegisterWindowMessageA("Taskbar Created");
 
@@ -82,12 +85,23 @@ LRESULT CALLBACK Window::WndProc(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wPa
 	TCHAR line2[] = TEXT("If bria is ringing a key press on your lock screen will");
 	TCHAR line3[] = TEXT("answer the phone for you");
 
+	if (uMsg == WM_TASKBAR && !IsWindowVisible(hwnd)) {
+		Window::Hide();
+		return 0;
+	}
+
 	switch (uMsg) {
 	case WM_ACTIVATE:
 		Shell_NotifyIcon(NIM_ADD, &nic);
 		break;
 	case WM_CREATE:
 		Hmenu = CreatePopupMenu();
+		if (registry->_is_running_at_startup) {
+			AppendMenu(Hmenu, MF_STRING | MF_CHECKED, ID_TRAY_STARTUP, TEXT("Run at Startup?"));
+		}
+		else{
+			AppendMenu(Hmenu, MF_STRING, ID_TRAY_STARTUP, TEXT("Run at Startup?"));
+		}
 		AppendMenu(Hmenu, MF_STRING, ID_TRAY_EXIT, TEXT("Exit"));
 	case WM_PAINT:
 		hdc = BeginPaint(hwnd, &ps);
@@ -126,10 +140,21 @@ LRESULT CALLBACK Window::WndProc(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wPa
 			// TrackPopupMenu blocks the app until TrackPopupMenu returns
 			UINT clicked = TrackPopupMenu(Hmenu, TPM_RETURNCMD | TPM_NONOTIFY, curPoint.x, curPoint.y, 0, hwnd, NULL);
 			SendMessage(hwnd, WM_NULL, 0, 0); // send benign message to window to make sure the menu goes away.
-			if (clicked == ID_TRAY_EXIT) {
+			switch (clicked) {
+			case ID_TRAY_EXIT:
 				// quit the application
 				Shell_NotifyIcon(NIM_DELETE, &nic);
 				PostQuitMessage(0);
+				break;
+			case ID_TRAY_STARTUP:
+				registry->RegisterStartup(!registry->_is_running_at_startup);
+				if (registry->_is_running_at_startup) {
+					CheckMenuItem(Hmenu, clicked, MF_CHECKED);
+				}
+				else {
+					CheckMenuItem(Hmenu, clicked, MF_UNCHECKED);
+				}
+				break;
 			}
 		}
 		break;
@@ -205,12 +230,13 @@ void Window::Worker(LPARAM lParam) {
 	std::string message("Key Down: ");
 	KBDLLHOOKSTRUCT* keyStruct = (KBDLLHOOKSTRUCT*)lParam;
 	message += keyStruct->vkCode;
-	Log::LogMessage(message);
+	Log::LogMessage(message.c_str());
 	AnswerCall();
 }
 
 void Window::Cleanup() {
 	UnhookWindowsHookEx(hookproc);
+	delete registry;
 }
 
 void Window::AnswerCall() {
@@ -235,9 +261,10 @@ void Window::AnswerCall() {
 		Log::LogMessage("There is a ringing call!");
 		std::string callerId;
 		api->GetCallerId(message, callerId);
-		Log::LogMessage("Callerid is " + callerId);
+		std::string mmessage("Callerid is " + callerId);
+		Log::LogMessage(mmessage.c_str());
 		api->AnswerCall(*p, callerId, message);
-		Log::LogMessage(message);
+		Log::LogMessage(message.c_str());
 	}
 	else {
 		Log::LogMessage("No Active Call");

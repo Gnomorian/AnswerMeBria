@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common.h"
+#include "Registry.h"
 
 namespace Window {
 	static LPCSTR windowClass;
@@ -23,6 +24,8 @@ namespace Window {
 	static int cmdShow = NULL;
 	// lock to prevent messaging bria too much if people spam the answer call button
 	static bool answering = false;
+	// registry method, used currently just for is starting at startup
+	static Registry* registry = NULL;
 
 	extern int InitWindow(LPCSTR windowClass, LPCSTR title, HINSTANCE instance, int nCmdShow);
 

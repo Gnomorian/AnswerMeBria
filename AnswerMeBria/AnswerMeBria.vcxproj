@@ -135,9 +135,8 @@
     <ClInclude Include="errorcodes.h" />
     <ClInclude Include="Logger.h" />
     <ClInclude Include="Pipe.h" />
+    <ClInclude Include="Registry.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="Tray.h" />
-    <ClInclude Include="WebSocket.h" />
     <ClInclude Include="window.h" />
   </ItemGroup>
   <ItemGroup>
@@ -147,8 +146,7 @@
     <ClCompile Include="Logger.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Pipe.cpp" />
-    <ClCompile Include="Tray.cpp" />
-    <ClCompile Include="WebSocket.cpp" />
+    <ClCompile Include="Registry.cpp" />
     <ClCompile Include="window.cpp" />
   </ItemGroup>
   <ItemGroup>

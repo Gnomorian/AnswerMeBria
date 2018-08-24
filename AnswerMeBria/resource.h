@@ -7,6 +7,7 @@
 
 #define ID_TRAY_APP_ICON				1001
 #define ID_TRAY_EXIT					1002
+#define ID_TRAY_STARTUP					1003
 #define WM_SYSICON						(WM_USER + 1)
 
 // Next default values for new objects

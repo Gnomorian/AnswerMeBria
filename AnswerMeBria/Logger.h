@@ -2,6 +2,7 @@
 
 #include "common.h"
 #include <fstream>
+#include <sstream>
 
 namespace Log {
 
@@ -26,9 +27,31 @@ namespace Log {
 	// deallocates the console and closes files
 	void Cleanup();
 
-	// writes to the console and logfile, returns true if successful
-	bool LogMessage(const std::string &message, Log::LOGLEVEL level = Log::LOGLEVEL::INFO);
+	// writes to the stream the format for the current time and date
+	void WriteLogHeader(std::stringstream &stream, Log::LOGLEVEL level);
+	void WriteLogHeader(std::wstringstream &stream, Log::LOGLEVEL level);
 
 	// write non null terminated messages to the console and logfile, returns true of successful
 	bool LogChunk(char *buffer, size_t startpos, size_t length, Log::LOGLEVEL level, bool endline = true);
+
+	/*
+		log char
+	*/
+	void LogMessage(char* message, int length, Log::LOGLEVEL level = Log::LOGLEVEL::INFO);
+
+	void LogMessage(const char* message, Log::LOGLEVEL level = Log::LOGLEVEL::INFO);
+
+	/*
+		log wide char
+	*/
+	void LogMessage(wchar_t* message, int length, Log::LOGLEVEL level = Log::LOGLEVEL::INFO);
+
+	void LogMessage(const wchar_t* message, Log::LOGLEVEL level = Log::LOGLEVEL::INFO);
+
+	/*
+		log with format
+	*/
+	void LogMessageF(const char* format, Log::LOGLEVEL level = Log::LOGLEVEL::INFO, ...);
+
+	void LogMessageF(const wchar_t* format, Log::LOGLEVEL level = Log::LOGLEVEL::INFO, ...);
 }
