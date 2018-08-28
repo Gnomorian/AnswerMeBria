@@ -1,5 +1,7 @@
 #include "Pipe.h"
 
+#include "Logger.h"
+
 Pipe::Pipe() {}
 
 Pipe::Pipe(TCHAR* pipeName) : fSuccess(false)
@@ -17,7 +19,7 @@ int Pipe::PipeMessage(std::string message) {
 	// Send a message to the pipe server. 
 
 	cbToWrite = (message.size() + 1) * sizeof(TCHAR);
-	_tprintf(TEXT("Sending %d byte message: \"%s\"\n"), cbToWrite, message.c_str());
+	Log::LogMessageF("Sending %d byte message: \"%s\"\n", Log::LOGLEVEL::DEBUGG, cbToWrite, message.c_str());
 
 	fSuccess = WriteFile(
 		hPipe,                  // pipe handle 
@@ -28,11 +30,11 @@ int Pipe::PipeMessage(std::string message) {
 
 	if (!fSuccess)
 	{
-		_tprintf(TEXT("WriteFile to pipe failed. GLE=%d\n"), GetLastError());
+		Log::LogMessageF("WriteFile to pipe failed. GLE=%d\n", Log::LOGLEVEL::CRITICAL, GetLastError());
 		return -1;
 	}
 
-	printf("\nMessage sent to server, receiving reply as follows:\n");
+	Log::LogMessage("\nMessage sent to server, receiving reply as follows:\n");
 }
 
 // gets a message from the pipe
@@ -57,12 +59,11 @@ std::string Pipe::RecieveMessage() {
 		if (!fSuccess && GetLastError() != ERROR_MORE_DATA)
 			break;
 
-		//_tprintf(TEXT("\"%s\"\n"), chBuf);
 	} while (!fSuccess);  // repeat loop if ERROR_MORE_DATA 
 
 	if (!fSuccess)
 	{
-		_tprintf(TEXT("ReadFile from pipe failed. GLE=%d\n"), GetLastError());
+		Log::LogMessageF("ReadFile from pipe failed. (%d)", Log::LOGLEVEL::CRITICAL, GetLastError());
 		return "";
 	}
 	else {
@@ -100,7 +101,8 @@ int Pipe::InitializePipe() {
 
 		if (GetLastError() != ERROR_PIPE_BUSY)
 		{
-			_tprintf(TEXT("Could not open pipe. GLE=%d\n"), GetLastError());
+			Log::LogMessageF("Could not open pipe. (%d)", Log::LOGLEVEL::CRITICAL, GetLastError());
+
 			return -1;
 		}
 
@@ -108,7 +110,7 @@ int Pipe::InitializePipe() {
 
 		if (!WaitNamedPipe(lpszPipename, 20000))
 		{
-			printf("Could not open pipe: 20 second wait timed out.");
+			Log::LogMessage("Could not open pipe: 20 second wait timed out.");
 			return -1;
 		}
 	}
@@ -123,7 +125,7 @@ int Pipe::InitializePipe() {
 		NULL);    // don't set maximum time 
 	if (!fSuccess)
 	{
-		_tprintf(TEXT("SetNamedPipeHandleState failed. GLE=%d\n"), GetLastError());
+		Log::LogMessageF("SetNamedPipeHandleState failed. (%d)", Log::LOGLEVEL::CRITICAL, GetLastError());
 		return -1;
 	}
 }

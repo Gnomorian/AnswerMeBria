@@ -1,5 +1,6 @@
 #pragma once
 
+#define NOMINMAX
 #include "common.h"
 #include "Registry.h"
 
@@ -26,6 +27,9 @@ namespace Window {
 	static bool answering = false;
 	// registry method, used currently just for is starting at startup
 	static Registry* registry = NULL;
+	static clock_t startTime = clock();
+
+	static std::chrono::time_point<std::chrono::system_clock> lastCall = std::chrono::system_clock::now();
 
 	extern int InitWindow(LPCSTR windowClass, LPCSTR title, HINSTANCE instance, int nCmdShow);
 

@@ -1,11 +1,15 @@
 #include "window.h"
 
-#include <thread>
+#include <ctime>
+#include <cstdlib>
+
 #include "resource.h"
 
 
 int Window::InitWindow(LPCSTR pWindowClass, LPCSTR pTitle, HINSTANCE instance, int nCmdShow)
 {
+	lastCall = std::chrono::system_clock::now();
+
 	windowClass = pWindowClass;
 	title = pTitle;
 	cmdShow = nCmdShow;
@@ -33,6 +37,7 @@ int Window::InitWindow(LPCSTR pWindowClass, LPCSTR pTitle, HINSTANCE instance, i
 	// register the WNDCLASSEX
 	if (!RegisterClassEx(&wcex)) {
 		MessageBox(NULL, TEXT("Call to RegisterClassEx failed"), TEXT("Error"), NULL);
+		Log::LogMessage("Call to RegisterClassEx Failed", Log::LOGLEVEL::CRITICAL);
 		return ERRORS::REGISTER_CLASS_EX;
 	}
 
@@ -52,12 +57,14 @@ int Window::InitWindow(LPCSTR pWindowClass, LPCSTR pTitle, HINSTANCE instance, i
 	);
 	if (!hwnd) {
 		MessageBox(NULL, TEXT("Call to CreateWindow failed"), TEXT("Error"), NULL);
+		Log::LogMessage("Call to CreateWindow failed", Log::LOGLEVEL::CRITICAL);
 		return ERRORS::CREATE_WINDOW;
 	}
 
 	// register notification for lock screen
 	if (!WTSRegisterSessionNotification(hwnd, NOTIFY_FOR_ALL_SESSIONS)) {
 		MessageBox(NULL, TEXT("Could not Subscribe to SessionNotifications"), TEXT("Error"), NULL);
+		Log::LogMessage("Could not Subscribe to SessionNotifications", Log::LOGLEVEL::CRITICAL);
 		return ERRORS::REGISTER_SESSION_NOTIFICATION;
 	}
 
@@ -221,6 +228,7 @@ bool Window::RegisterKeyboardHook() {
 	if (hookproc == NULL) {
 		DWORD errormsg = GetLastError();
 		MessageBox(NULL, TEXT("could not create hook to SetWindowsHookEx"), TEXT("Error"), NULL);
+		Log::LogMessage("Could not create hook to SetWindowsHookEx", Log::LOGLEVEL::CRITICAL);
 		return false;
 	}
 	return true;
@@ -240,10 +248,13 @@ void Window::Cleanup() {
 }
 
 void Window::AnswerCall() {
-	// if one of these threads are already answering the call, quit
-	if (answering)
+	
+	double secondsPassed;
+	if (clock() + 2000l < startTime) {
+		Log::LogMessage("Button pressed too quickly.");
 		return;
-	answering = true;
+	}
+	
 	// initialize pipe and api
 	std::string callerId;
 	Pipe *p = new Pipe((TCHAR*)TEXT("\\\\.\\pipe\\apipipe"));
@@ -253,7 +264,7 @@ void Window::AnswerCall() {
 	// get the current call status
 	std::string message;
 	int responce = api->GetCallStatus(message, *p);
-	std::cout << message << std::endl;
+	Log::LogMessage(message);
 
 	// get the caller id if there is one
 	// answer the call if there is a caller id
@@ -261,22 +272,24 @@ void Window::AnswerCall() {
 		Log::LogMessage("There is a ringing call!");
 		std::string callerId;
 		api->GetCallerId(message, callerId);
-		std::string mmessage("Callerid is " + callerId);
-		Log::LogMessage(mmessage.c_str());
+		Log::LogMessageF("Callerid is %s", Log::LOGLEVEL::INFO, callerId);
+
 		api->AnswerCall(*p, callerId, message);
-		Log::LogMessage(message.c_str());
+		Log::LogMessage(message);
 	}
 	else {
 		Log::LogMessage("No Active Call");
 	}
+	startTime = clock();
 	delete p;
 	delete api;
-	answering = false;
 }
 
 void Window::AudioEndpointCallback() {
-	if (sessionLocked) {
-		std::cout << "Session Locked and Audio Changed, Answeing Call" << std::endl;
+	if (sessionLocked && !answering) {
+		answering = true;
+		Log::LogMessage("Session Locked and Audio Changed, Answeing Call");
 		Window::AnswerCall();
+		answering = false;
 	}
 }

@@ -10,6 +10,9 @@
 #include <wtsapi32.h>
 #include <wchar.h>
 #include <tchar.h>
+#include <chrono>
+#include <thread>
+#include <ctime>
 
 // my stuff
 #include "errorcodes.h"
